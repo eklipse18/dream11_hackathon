@@ -11,3 +11,10 @@ dependencies = [
     "torch>=2.14.0",
     "torchinfo>=1.8.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "ipython>=8.39.0",
+    "jupyter>=1.1.1",
+]
