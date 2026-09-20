@@ -2,7 +2,7 @@
 import pandas as pd
 import pulp
 
-FEATURES_PATH = "player_match_features.csv"
+FEATURES_PATH = "aggregate_player_match_features.csv"
 
 #Roles: Batsman, Bowler, All-Rounder, Wicket-Keeper
 ROLES_PATH = "roles.csv"
