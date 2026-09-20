@@ -2,10 +2,10 @@
 import pandas as pd
 import pulp
 
-FEATURES_PATH = "/mnt/user-data/outputs/player_match_features.csv"
+FEATURES_PATH = "player_match_features.csv"
 
 #Roles: Batsman, Bowler, All-Rounder, Wicket-Keeper
-ROLES_PATH = None
+ROLES_PATH = "roles.csv"
 
 
 def get_latest_stats(df: pd.DataFrame, team: str, date: str) -> pd.DataFrame:
