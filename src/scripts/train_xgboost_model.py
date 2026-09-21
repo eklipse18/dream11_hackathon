@@ -7,17 +7,15 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-DATA_PATH = "/mnt/user-data/outputs/player_match_features_with_external_data.csv"
-OUTPUT_DIR = Path("/mnt/user-data/outputs")
+DATA_PATH = "player_match_features_with_external_data.csv"
+OUTPUT_DIR = Path("outputs")
 
 NUMERIC_FEATURES = [
-    "runs_form_5", "strike_rate_form_5", "wickets_form_5", "economy_form_5",
-    "fantasy_points_form_5",
     "runs_career_avg", "wickets_career_avg", "fantasy_points_career_avg",
     "fantasy_points_venue_avg", "fantasy_points_vs_opponent_avg",
-    "temp_max", "temp_min", "precipitation",
+    "temp_max", "temp_min", "precipitation"
 ]
-CATEGORICAL_FEATURES = ["venue", "team", "opponent", "role_group"]
+CATEGORICAL_FEATURES = ["venue", "team", "opponent", "role_group", "weather_code"]
 TARGET = "fantasy_points"
 
 VAL_FRAC = 0.15     
@@ -72,9 +70,6 @@ def prepare_features(df: pd.DataFrame):
     X = df[NUMERIC_FEATURES + CATEGORICAL_FEATURES].copy()
     y = df[TARGET].copy()
 
-    # Missing categoricals become their own "missing"/"UNKNOWN" category;
-    # missing numerics are left as NaN -- XGBoost learns a default split
-    # direction for them natively, no manual imputation needed.
     for col in CATEGORICAL_FEATURES:
         X[col] = X[col].astype("category")
 
