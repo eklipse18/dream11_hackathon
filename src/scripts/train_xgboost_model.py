@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 
@@ -7,15 +6,15 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-DATA_PATH = "player_match_features_with_external_data.csv"
-OUTPUT_DIR = Path("outputs")
+DATA_PATH = "src/data/aggregate_player_match_features_with_external_data.csv"
+OUTPUT_DIR = Path("src/models/")
 
 NUMERIC_FEATURES = [
     "runs_form_5", "wickets_form_5", "fantasy_points_form_5",
     "matches_played",
     "runs_career_avg", "wickets_career_avg", "fantasy_points_career_avg",
     "fantasy_points_venue_avg", "fantasy_points_vs_opponent_avg",
-    "temp_max", "temp_min", "precipitation", "humidity", "wind_speed", "avg_fours", "avg_sixes"
+    "temp_max", "temp_min", "precipitation", "humidity", "wind_speed", "avg_fours", "avg_sixes", "avg_balls_faced", "avg_outs", "avg_runs_conceded", "avg_balls_bowled", "avg_catches", "avg_runouts"
 ]
 CATEGORICAL_FEATURES = ["venue", "team", "opponent", "role_group", "weather_code", "pitch_type"]
 TARGET = "fantasy_points"
@@ -152,7 +151,6 @@ def show_feature_importance(model, X_train) -> pd.Series:
 
 
 def explain_with_shap(model, X_test, n_examples: int = 3):
-
     try:
         import shap
     except ImportError:

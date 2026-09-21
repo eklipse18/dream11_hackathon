@@ -1,0 +1,75 @@
+match_id,venue,date,batting_team,bowling_team
+202601,"M.Chinnaswamy Stadium, Bengaluru",2026-03-28,SRH,RCB
+202602,"Wankhede Stadium, Mumbai",2026-03-29,KKR,MI
+202603,"Barsapara Cricket Stadium, Guwahati",2026-03-30,CSK,RR
+202604,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, New Chandigarh",2026-03-31,GT,PBKS
+202605,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-04-01,LSG,DC
+202606,"Eden Gardens, Kolkata",2026-04-02,SRH,KKR
+202607,"MA Chidambaram Stadium, Chennai",2026-04-03,CSK,PBKS
+202608,"Arun Jaitley Stadium, Delhi",2026-04-04,MI,DC
+202609,"Narendra Modi Stadium, Ahmedabad",2026-04-04,RR,GT
+202610,"Rajiv Gandhi International Stadium, Hyderabad",2026-04-05,SRH,LSG
+202611,"M.Chinnaswamy Stadium, Bengaluru",2026-04-05,RCB,CSK
+202612,"Eden Gardens, Kolkata",2026-04-06,KKR,PBKS
+202613,"Barsapara Cricket Stadium, Guwahati",2026-04-07,RR,MI
+202614,"Arun Jaitley Stadium, Delhi",2026-04-08,GT,DC
+202615,"Eden Gardens, Kolkata",2026-04-09,KKR,LSG
+202616,"Barsapara Cricket Stadium, Guwahati",2026-04-10,RCB,RR
+202617,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, New Chandigarh",2026-04-11,SRH,PBKS
+202618,"MA Chidambaram Stadium, Chennai",2026-04-11,CSK,DC
+202619,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-04-12,LSG,GT
+202620,"Wankhede Stadium, Mumbai",2026-04-12,RCB,MI
+202621,"Rajiv Gandhi International Stadium, Hyderabad",2026-04-13,SRH,RR
+202622,"MA Chidambaram Stadium, Chennai",2026-04-14,CSK,KKR
+202623,"M.Chinnaswamy Stadium, Bengaluru",2026-04-15,LSG,RCB
+202624,"Wankhede Stadium, Mumbai",2026-04-16,MI,PBKS
+202625,"Narendra Modi Stadium, Ahmedabad",2026-04-17,KKR,GT
+202626,"M.Chinnaswamy Stadium, Bengaluru",2026-04-18,RCB,DC
+202627,"Rajiv Gandhi International Stadium, Hyderabad",2026-04-18,SRH,CSK
+202628,"Eden Gardens, Kolkata",2026-04-19,RR,KKR
+202629,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, New Chandigarh",2026-04-19,PBKS,LSG
+202630,"Narendra Modi Stadium, Ahmedabad",2026-04-20,MI,GT
+202631,"Rajiv Gandhi International Stadium, Hyderabad",2026-04-21,SRH,DC
+202632,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-04-22,RR,LSG
+202633,"Wankhede Stadium, Mumbai",2026-04-23,CSK,MI
+202634,"M.Chinnaswamy Stadium, Bengaluru",2026-04-24,GT,RCB
+202635,"Arun Jaitley Stadium, Delhi",2026-04-25,DC,PBKS
+202636,"Sawai Mansingh Stadium, Jaipur",2026-04-25,RR,SRH
+202637,"MA Chidambaram Stadium, Chennai",2026-04-26,CSK,GT
+202638,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-04-26,KKR,LSG
+202639,"Arun Jaitley Stadium, Delhi",2026-04-27,DC,RCB
+202640,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, New Chandigarh",2026-04-28,PBKS,RR
+202641,"Wankhede Stadium, Mumbai",2026-04-29,MI,SRH
+202642,"Narendra Modi Stadium, Ahmedabad",2026-04-30,RCB,GT
+202643,"Sawai Mansingh Stadium, Jaipur",2026-05-01,RR,DC
+202644,"MA Chidambaram Stadium, Chennai",2026-05-02,MI,CSK
+202645,"Rajiv Gandhi International Stadium, Hyderabad",2026-05-03,SRH,KKR
+202646,"Narendra Modi Stadium, Ahmedabad",2026-05-03,PBKS,GT
+202647,"Wankhede Stadium, Mumbai",2026-05-04,LSG,MI
+202648,"Arun Jaitley Stadium, Delhi",2026-05-05,DC,CSK
+202649,"Rajiv Gandhi International Stadium, Hyderabad",2026-05-06,SRH,PBKS
+202650,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-05-07,LSG,RCB
+202651,"Arun Jaitley Stadium, Delhi",2026-05-08,DC,KKR
+202652,"Sawai Mansingh Stadium, Jaipur",2026-05-09,GT,RR
+202653,"MA Chidambaram Stadium, Chennai",2026-05-10,LSG,CSK
+202654,"Shaheed Veer Narayan Singh International Stadium, Raipur",2026-05-10,MI,RCB
+202655,"Himachal Pradesh Cricket Association Stadium, Dharamsala",2026-05-11,PBKS,DC
+202656,"Narendra Modi Stadium, Ahmedabad",2026-05-12,GT,SRH
+202657,"Shaheed Veer Narayan Singh International Stadium, Raipur",2026-05-13,KKR,RCB
+202658,"Himachal Pradesh Cricket Association Stadium, Dharamsala",2026-05-14,PBKS,MI
+202659,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-05-15,CSK,LSG
+202660,"Eden Gardens, Kolkata",2026-05-16,KKR,GT
+202661,"Himachal Pradesh Cricket Association Stadium, Dharamsala",2026-05-17,RCB,PBKS
+202662,"Arun Jaitley Stadium, Delhi",2026-05-17,RR,DC
+202663,"MA Chidambaram Stadium, Chennai",2026-05-18,CSK,SRH
+202664,"Sawai Mansingh Stadium, Jaipur",2026-05-19,LSG,RR
+202665,"Eden Gardens, Kolkata",2026-05-20,MI,KKR
+202666,"Narendra Modi Stadium, Ahmedabad",2026-05-21,GT,CSK
+202667,"Rajiv Gandhi International Stadium, Hyderabad",2026-05-22,SRH,RCB
+202668,"Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",2026-05-23,LSG,PBKS
+202669,"Wankhede Stadium, Mumbai",2026-05-24,RR,MI
+202670,"Eden Gardens, Kolkata",2026-05-24,DC,KKR
+202671,"Himachal Pradesh Cricket Association Stadium, Dharamsala",2026-05-26,RCB,GT
+202672,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, New Chandigarh",2026-05-27,RR,SRH
+202673,"Maharaja Yadavindra Singh International Cricket Stadium, Mullanpur, New Chandigarh",2026-05-29,RR,GT
+202674,"Narendra Modi Stadium, Ahmedabad",2026-05-31,GT,RCB
