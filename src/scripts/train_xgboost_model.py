@@ -11,11 +11,13 @@ DATA_PATH = "player_match_features_with_external_data.csv"
 OUTPUT_DIR = Path("outputs")
 
 NUMERIC_FEATURES = [
+    "runs_form_5", "wickets_form_5", "fantasy_points_form_5",
+    "matches_played",
     "runs_career_avg", "wickets_career_avg", "fantasy_points_career_avg",
     "fantasy_points_venue_avg", "fantasy_points_vs_opponent_avg",
-    "temp_max", "temp_min", "precipitation"
+    "temp_max", "temp_min", "precipitation", "humidity", "wind_speed", "avg_fours", "avg_sixes"
 ]
-CATEGORICAL_FEATURES = ["venue", "team", "opponent", "role_group", "weather_code"]
+CATEGORICAL_FEATURES = ["venue", "team", "opponent", "role_group", "weather_code", "pitch_type"]
 TARGET = "fantasy_points"
 
 VAL_FRAC = 0.15     
