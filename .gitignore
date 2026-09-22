@@ -219,4 +219,12 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-data/
+src/data/*
+!src/data/Domestic
+src/data/Domestic/*
+!src/data/Domestic/Men's
+src/data/Domestic/Men's/*
+!src/data/Domestic/Men's/IPL
+src/data/Domestic/Men's/IPL/2026
+# # Our custom data
+!src/data/*.csv
