@@ -2,7 +2,6 @@
 
 **Task:** Recommend an 11-player IPL fantasy team for an upcoming match by predicting each player's fantasy points, with explanations for every pick.
 **Training data:** Cricsheet ball-by-ball data, Domestic → Men's → IPL, seasons 2022–2025 only. No 2026 data is used anywhere.
-**Report date:** 21 September 2026
 
 ---
 
@@ -10,23 +9,21 @@
 
 The solution has two stages:
 
-1. **Player points model.** A gradient-boosted tree regressor (XGBoost) predicts each player's fantasy points for a match. It uses rolling form, career averages, venue and opponent history, a stats-derived player role, and match-day weather.
-2. **Team optimiser.** An integer linear program (ILP) chooses the 11 players with the highest total predicted points, subject to the hackathon rules on team composition (1–8 per role, at least one player from each side).
+1. **Player points model.** A gradient-boosted tree regressor (XGBoost) predicts each player's fantasy points for a match, using rolling form, career averages, venue and opponent history, a stats-derived player role, and match-day weather.
+2. **Team optimiser.** An integer linear program (ILP) picks the 11 players with the highest total predicted points, subject to the hackathon's team-composition rules (1–8 per role, at least one player from each side).
 
 Each recommended player comes with a SHAP breakdown of the features that raised or lowered their prediction.
 
-**Headline results.** Evaluated on the full 2025 season (74 matches, 1,712 player-match rows), with the model trained on 2022–2024:
+**Headline results.** Evaluated on the full 2025 season (1,712 player-match rows; 73 matches for the team-level numbers), with the model trained on 2022–2024:
 
 | | Player-level MAE | XI points as % of best possible XI |
 |---|---|---|
-| Predict the training mean for everyone | 24.66 | 62.6 % |
-| Career average | 24.59 | 66.1 % |
-| XGBoost (stats-derived roles) | 24.27 | 66.2 % |
-| **XGBoost (all features)** | **24.28** | **67.1 %** |
+| Predict the training mean for everyone | 24.66 | 60.6 % |
+| Career average | 24.59 | **65.6 %** |
+| LP heuristic (mean of 4 averages) | 25.26 | 65.2 % |
+| **XGBoost (all features)** | **24.38** | 65.1 % |
 
-The second XGBoost model includes extra strike-rate and economy form features as well.
-
-Per-player fantasy points in T20 are very noisy, and the model is only slightly better than simple baselines. Section 8 discusses why and what is most likely to help.
+Per-player fantasy points in T20 are just very noisy. XGBoost is better than any baseline at predicting an individual player's points, but it does not actually pick better teams than a plain career average — all three models land within half a point of each other on the share of the Dream Team they capture. Section 7.3 gets into why, and Section 10 lists what's most likely to help.
 
 ---
 
@@ -39,7 +36,7 @@ Per-player fantasy points in T20 are very noisy, and the model is only slightly 
 | Train only on IPL 2022–2025, never on 2026 | Every feature is computed from 2022–2025 deliveries. Evaluation holds out 2025 in the same way 2026 will be held out. |
 | Toss not known, no playing XI or batting order | No feature uses toss, XI or batting position. Only pre-match history and context are used. |
 | Features must be available for future matches | All features are lagged (prior matches only). See Section 4.3 for the one exception (weather). |
-| Recommendation in under 10 s | ILP solve takes 0.05 s on average and 0.08 s at worst; model inference takes milliseconds |
+| Recommendation in under 10 s | ILP solve takes 0.07 s on average and 0.09 s at worst over the 73 evaluated 2025 matches; model inference takes milliseconds |
 
 ---
 
@@ -62,7 +59,7 @@ For each player in each match, the delivery data is rolled up into:
 
 The raw `fielder` column contains substitute fielders (`(sub)Anukul Roy`) and combined entries (`Tilak Varma/Ishan Kishan`). These create fake "players" with a few catches each. The cleaned dataset drops them, which takes the table from 6,813 to 6,713 rows.
 
-**Remaining known issue.** 167 rows belong to players who only fielded in that match (took a catch without batting or bowling), and these rows have no `team`. For evaluation we fill in the team from that player's most common team in the same season. The 29 rows that still can't be resolved are dropped.
+**Remaining known issue.** 167 rows belong to players who only fielded in that match (took a catch without batting or bowling), and these rows have no `team`. For evaluation we fill in the team from that player's most common team in the same season, and take the opponent to be the other side in that match. The 31 rows that still can't be resolved are dropped, leaving **6,682 rows** for evaluation (4,970 train, 1,712 test).
 
 ### 3.4 External data (fetched programmatically)
 
@@ -102,12 +99,13 @@ Every history feature is computed **only from matches before the current one** (
 | Group | Features | Notes |
 |---|---|---|
 | Recent form (last 5 matches) | `runs_form_5`, `wickets_form_5`, `fantasy_points_form_5`, `strike_rate_form_5`, `economy_form_5` | Missing for a player's first IPL match (5.5 % of rows) |
-| Career | `runs_career_avg`, `wickets_career_avg`, `fantasy_points_career_avg`, `matches_played` | Expanding mean over all earlier matches |
+| Career | `runs_career_avg`, `wickets_career_avg`, `fantasy_points_career_avg` | Expanding mean over all earlier matches |
+| Experience | `matches_played` | Count of the player's earlier IPL matches. Computed in `evaluation.py`, not stored in the CSV. |
 | Venue history | `fantasy_points_venue_avg` | Player's average at this venue. Missing for 40 % of rows (first visit). |
-| Opponent history | `fantasy_points_vs_opponent_avg` | Player's average against this opponent. Missing for 37 % of rows. |
+| Opponent history | `fantasy_points_vs_opponent_avg` | Player's average against this opponent. Missing for 36 % of rows. |
 | Match context | `venue`, `team`, `opponent` | Categorical, handled natively by XGBoost |
 | Weather | `temp_max`, `temp_min`, `precipitation`, `weather_code` | Open-Meteo, match day at venue |
-| **Player role (stats-derived)** | `role` belongs to {batter, bowler, allrounder, wicketkeeper} | See below. Also stored as four one-hot columns `is_batter`, `is_bowler`, `is_allrounder`, `is_wicketkeeper`. |
+| **Player role (stats-derived)** | `role` belongs to {batter, bowler, allrounder, wicketkeeper} | See below. Computed in `evaluation.py`; the CSV stores only the scraped `player_role` text. |
 
 **Stats-derived player roles.** The role is needed twice: as a model feature and for the team-composition constraints. We derive it from how each player is actually used in the IPL, not from scraped text:
 
@@ -116,7 +114,9 @@ Every history feature is computed **only from matches before the current one** (
 - **Bowler:** meets the overs threshold only
 - **Batter:** everyone else
 
-We chose the thresholds by comparing against the players whose Wikipedia role is known. This gives every player exactly one role: 118 batters, 169 bowlers, 34 all-rounders and 37 wicketkeepers. Mapping the scraped text instead leaves 186 of 358 players with no role (`UNKNOWN`).
+We chose the thresholds by comparing against the players whose Wikipedia role is known. Mapping the scraped text instead leaves half of all players with no role (`UNKNOWN`).
+
+**The role is recomputed for every row from that player's earlier matches only**, so it never uses the match being predicted, and a player can be reclassified as their career develops. By each player's last 2025 appearance the split is 137 batters, 157 bowlers, 28 all-rounders and 36 wicketkeepers. A player's first-ever match has no history, so they start as a batter unless the scraped text says wicketkeeper.
 
 The main disagreement with Wikipedia is players it calls "batting all-rounders" who barely bowl in the IPL. Tilak Varma and Shivam Dube, for example, bowl about 0.1 overs per match, and we classify them as batters. For fantasy scoring, how a player is used in the IPL is what counts.
 
@@ -147,7 +147,7 @@ flowchart LR
 | Setting | Value |
 |---|---|
 | Objective | Squared error (reported metric: MAE) |
-| Trees | Up to 2,000, with early stopping (50 rounds) on the validation season. **34–42 trees selected.** |
+| Trees | Up to 2,000, with early stopping (50 rounds) on the validation season. **42 trees selected** for the 2025 test run. |
 | Depth / learning rate | 4 / 0.03 |
 | Row / column subsampling | 0.8 / 0.8 |
 | `min_child_weight`, `reg_lambda` | 5, 1.0 |
@@ -163,11 +163,18 @@ For a candidate pool of players $P$ with predicted points $\hat{y}_i$, team $t_i
 
 $$\max (\sum_{i \in P} \hat{y}_i x_i) \quad \text{s.t.} \quad \sum_i x_i = 11,\quad \sum_{i: t_i = T} x_i \ge 1 \;\; \forall T,\quad 1 \le \sum_{i: r_i = R} x_i \le 8 \;\; \forall R.$$
 
-The problem is solved with PuLP and the CBC solver. With about 30 candidates it solves in about 50 ms, far within the 10-second limit. Because the solution is an exact optimum of the objective, all the quality of the recommendation comes from the point predictions.
+The problem is solved with PuLP and the CBC solver. With about 25 candidates it solves in about 70 ms, far within the 10-second limit. Because the solution is an exact optimum of the objective, all the quality of the recommendation comes from the point predictions.
 
 ---
 
 ## 6. Evaluation protocol
+
+Everything in this section is implemented in **`src/scripts/evaluation.py`**, which reproduces both result tables and writes one row per match per model to `src/model_artifacts/evaluation_2025.csv`:
+
+```
+uv run --no-project --with xgboost --with pulp --with pandas --with numpy \
+  python src/scripts/evaluation.py --test-season 2025
+```
 
 - **Split by season, never shuffled:** train on 2022–2023, validate on 2024 (early stopping only), then **refit on 2022–2024** with the selected number of trees and **test on 2025**. This is the same setup as the official evaluation, which trains on ≤ 2025 and tests on 2026.
 - **Player-level metrics:** MAE, RMSE, R², and the Spearman rank correlation between predicted and actual points *within each match*. Ranking within a match is what drives team selection.
@@ -177,7 +184,9 @@ The problem is solved with PuLP and the CBC solver. With about 30 candidates it 
   - how many players the predicted XI shares with the Dream Team
   - the MAE between the predicted and actual XI totals
 
-**Caveat.** The evaluation pool contains only players who actually took part (batted, bowled or fielded). At real prediction time the pool is the full squad of about 15 per side, so real-world performance will be somewhat lower.
+**Caveats.**
+- The evaluation pool contains only players who actually took part (batted, bowled or fielded). At real prediction time the pool is the full squad of about 15 per side, so real-world performance will be somewhat lower.
+- One 2025 match (`202558`, PBKS vs DC) was abandoned after a few overs and has only 8 players in the data. No XI can be picked from it, so the team-level tables cover **73 of the 74 matches**. Player-level metrics still use all 1,712 rows.
 
 **Baselines:**
 - **Mean:** the same prediction for everyone, so the ILP's choice is effectively arbitrary
@@ -192,33 +201,29 @@ The problem is solved with PuLP and the CBC solver. With about 30 candidates it 
 
 | Model | MAE ↓ | RMSE ↓ | R² ↑ | Within-match Spearman ↑ |
 |---|---|---|---|---|
-| Mean baseline | 24.66 | 30.99 | 0.000 | — |
-| Career average | 24.59 | 31.12 | −0.008 | **0.150** |
+| Mean baseline | 24.66 | 30.99 | 0.000 | — (constant) |
+| Career average | 24.59 | 31.12 | −0.008 | **0.149** |
 | LP heuristic (mean of 4 averages) | 25.26 | 32.36 | −0.090 | 0.129 |
-| XGBoost, scraped roles | 24.31 | 30.56 | 0.027 | 0.112 |
-| **XGBoost, stats-derived roles** | **24.27** | **30.52** | **0.030** | 0.118 |
-| XGBoost, stats-derived roles, no weather | 24.31 | 30.57 | 0.027 | 0.129 |
-| XGBoost, all features (+ SR/economy form) | 24.28 | 30.52 | 0.030 | 0.139 |
+| **XGBoost, all features** | **24.38** | **30.60** | **0.025** | 0.116 |
 
-### 7.2 Team-level (74 matches in 2025; Dream Team averages 643 points)
+### 7.2 Team-level (73 matches in 2025; Dream Team averages 649 points)
 
 | Model | Actual points of XI | % of Dream Team | Overlap with Dream XI | Team total MAE |
 |---|---|---|---|---|
-| Mean baseline (arbitrary XI) | 399.6 | 62.6 % | 5.6 / 11 | 73.9 |
-| Career average | 423.7 | 66.1 % | 5.9 | 100.6 |
-| LP heuristic | 420.7 | 65.7 % | 5.9 | 104.6 |
-| XGBoost, scraped roles | 423.5 | 66.1 % | 5.9 | 88.9 |
-| XGBoost, stats-derived roles | 423.5 | 66.2 % | 5.9 | 85.4 |
-| XGBoost, no weather | 421.9 | 65.8 % | 5.9 | 86.3 |
-| **XGBoost, all features** | **429.5** | **67.1 %** | **5.9** | 87.5 |
+| Mean baseline (arbitrary XI) | 393.2 | 60.6 % | 5.6 / 11 | **79.9** |
+| **Career average** | **426.3** | **65.6 %** | 5.9 | 101.1 |
+| LP heuristic | 423.5 | 65.2 % | 5.9 | 105.2 |
+| XGBoost, all features | 422.4 | 65.1 % | 5.8 | 85.5 |
 
 ### 7.3 What the results say
 
-1. **Every approach captures about two-thirds of the best possible score, and the models add only about 4 percentage points over an arbitrary XI.** The best model (all features) reaches 67.1 % against 62.6 %. Per-match results vary widely, from 37 % to 100 %. The stats-derived-roles model beats the arbitrary XI in only 51 % of matches.
-2. **XGBoost improves slightly on MAE and on how well its predicted XI totals match reality (team total MAE 85 vs 101–105 for the averaging baselines), but not on ranking.** The simple career average has the best within-match rank correlation. The tree model is well calibrated overall but no better than an average at ordering players within a match.
-3. **Stats-derived roles beat the scraped roles, but only slightly** (MAE 24.27 vs 24.31, team total MAE 85.4 vs 88.9). The larger benefit is operational: every player has a valid role, so the composition constraints always apply.
-4. **Weather adds almost nothing.** Removing it changes MAE by 0.04. Its gain-based importance looks high only because trees split on noisy continuous variables. SHAP (below) shows its real contribution is small.
-5. **Early stopping picks only 34–42 trees at learning rate 0.03.** The model barely moves away from the mean before validation error stops improving. That is a symptom of a low signal-to-noise target, not of a model that is too small.
+1. **Every approach captures about two-thirds of the best possible score, and the models add about 5 percentage points over an arbitrary XI.** The best model reaches 65.6 % against 60.6 %. Per-match results vary widely: XGBoost ranges from 36 % to 90 % across the season, and beats the arbitrary XI in only 60 % of matches (career average: 66 %).
+2. **XGBoost predicts individual players best but does not select better teams.** It has the lowest player-level MAE (24.38) and its predicted XI totals track reality far better than the averaging baselines (team total MAE 85.5 vs 101–105), yet it captures no more of the Dream Team than a plain career average. Selection depends only on *ranking players within a match*, and there the career average is still the best of the four (Spearman 0.149 vs 0.116).
+3. **The mean baseline has the lowest team-total MAE, and that metric is misleading.** Predicting the same value for everyone gives an XI total near the season average, which happens to be close on average while the XI itself is arbitrary. Read team total MAE only alongside % of Dream Team.
+4. **Weather contributes almost nothing.** The four weather features together account for 0.27 points of mean |SHAP|, below `matches_played` on its own (Section 8.1).
+5. **Early stopping picks only 42 trees at learning rate 0.03.** The model barely moves away from the mean before validation error stops improving. That is a symptom of a low signal-to-noise target, not of a model that is too small.
+
+**Changes from the 21 September run.** Roles are now derived from each player's earlier matches only; previously they were derived once from the whole dataset, which let the test season leak into a feature. XGBoost's share of the Dream Team drops from 67.1 % to 65.1 %, which puts it behind the career average. The earlier ablations (scraped roles, no-weather) are not in this table because the current script evaluates one XGBoost configuration; re-adding them is a matter of adding entries to its `MODELS` dict.
 
 ---
 
@@ -230,17 +235,18 @@ The problem is solved with PuLP and the CBC solver. With about 30 candidates it 
 
 | Rank | Feature | Mean \|SHAP\| (points) |
 |---|---|---|
-| 1 | `runs_career_avg` | 1.40 |
-| 2 | `fantasy_points_career_avg` | 1.18 |
-| 3 | `venue` | 0.90 |
-| 4 | `opponent` | 0.52 |
-| 5 | `runs_form_5` | 0.50 |
-| 6 | `role` | 0.49 |
-| 7 | `matches_played` | 0.44 |
-| 8 | `fantasy_points_form_5` | 0.40 |
-| … | weather (`weather_code`, `temp_max`, `temp_min`, `precipitation`) | 0.16, 0.05, 0.05, 0.02 |
+| 1 | `runs_career_avg` | 2.04 |
+| 2 | `venue` | 1.04 |
+| 3 | `fantasy_points_form_5` | 0.80 |
+| 4 | `fantasy_points_career_avg` | 0.75 |
+| 5 | `matches_played` | 0.72 |
+| 6 | `opponent` | 0.60 |
+| 7 | `runs_form_5` | 0.56 |
+| 8 | `strike_rate_form_5` | 0.46 |
+| … | `role` | 0.07 |
+| … | weather (`weather_code`, `temp_min`, `temp_max`, `precipitation`) | 0.12, 0.07, 0.06, 0.02 |
 
-In plain terms: the model mostly asks **"how many runs and fantasy points does this player usually get?"** It then adjusts for the venue, the opponent, recent form and the player's role. All-rounders get a boost of about +2 to +3 points because they can score in two ways.
+In plain terms: the model mostly asks **"how many runs does this player usually get?"** It then adjusts for the venue, recent form, experience and the opponent. `role` now barely matters on its own (0.07 points, down from 0.49): with roles derived per match from prior form, the form and career features already carry most of what the role used to stand for. It still matters for the optimiser, where it drives the composition constraints.
 
 ### 8.2 Per-player justification (Product UI output)
 
@@ -248,20 +254,20 @@ For every recommended player, the UI shows the predicted points and the three fe
 
 | Player | Team | Role | Predicted | Actual | Top drivers (SHAP, points) |
 |---|---|---|---|---|---|
-| Rajat Patidar | RCB | batter | 45.1 | 31 | runs_career_avg (+4.1), fantasy_points_career_avg (+2.7), opponent (+0.8) |
-| Kohli | RCB | batter | 44.8 | 50 | runs_career_avg (+4.1), fantasy_points_career_avg (+1.8), runs_form_5 (+1.2) |
-| Phil Salt | RCB | wicketkeeper | 42.9 | 28 | runs_career_avg (+3.1), fantasy_points_career_avg (+1.9), opponent (+0.9) |
-| Shreyas Iyer | PBKS | batter | 41.5 | 17 | runs_career_avg (+2.5), fantasy_points_career_avg (+1.6), fantasy_points_venue_avg (+0.8) |
-| Priyansh Arya | PBKS | batter | 40.4 | 36 | runs_career_avg (+3.0), fantasy_points_career_avg (+1.7), runs_form_5 (+0.6) |
-| Stoinis | PBKS | allrounder | 40.0 | 8 | role (+3.2), fantasy_points_career_avg (+1.5), venue (−0.9) |
-| Prabhsimran | PBKS | wicketkeeper | 39.2 | 30 | runs_career_avg (+2.7), fantasy_points_career_avg (+1.4), runs_form_5 (+0.5) |
-| Livingstone | RCB | allrounder | 39.0 | 37 | role (+2.4), fantasy_points_career_avg (+2.0), opponent (+1.0) |
-| Josh Inglis | PBKS | wicketkeeper | 35.7 | 52 | fantasy_points_career_avg (+1.5), runs_career_avg (−1.2), fantasy_points_form_5 (+0.7) |
-| Hazlewood | RCB | bowler | 35.5 | 25 | runs_career_avg (−1.3), fantasy_points_career_avg (+1.0), wickets_career_avg (−0.8) |
-| Chahal | PBKS | bowler | 35.4 | 25 | runs_career_avg (−1.2), fantasy_points_career_avg (+1.0), wickets_form_5 (+0.4) |
-| **Total** | | | **439.4** | **339** | Dream Team for this match: 629 |
+| Kohli | RCB | batter | 45.3 | 50 | runs_career_avg (+6.4), runs_form_5 (+1.0), fantasy_points_venue_avg (+1.0) |
+| Rajat Patidar | RCB | batter | 44.9 | 31 | runs_career_avg (+6.9), fantasy_points_career_avg (+1.1), matches_played (+0.7) |
+| Priyansh Arya | PBKS | batter | 43.5 | 36 | runs_career_avg (+5.7), fantasy_points_venue_avg (+1.1), fantasy_points_career_avg (+1.0) |
+| Phil Salt | RCB | wicketkeeper | 42.6 | 28 | runs_career_avg (+5.0), fantasy_points_career_avg (+1.1), venue (+0.8) |
+| Shreyas Iyer | PBKS | batter | 41.7 | 17 | runs_career_avg (+4.5), fantasy_points_career_avg (+1.0), fantasy_points_venue_avg (+0.7) |
+| Prabhsimran | PBKS | wicketkeeper | 41.0 | 30 | runs_career_avg (+4.5), fantasy_points_career_avg (+1.1), runs_form_5 (+0.9) |
+| Krunal Pandya | RCB | allrounder | 36.4 | 62 | fantasy_points_form_5 (+1.7), runs_career_avg (−1.4), venue (−1.1) |
+| Stoinis | PBKS | allrounder | 36.4 | 8 | fantasy_points_career_avg (+1.2), venue (−1.0), matches_played (+0.6) |
+| Azmatullah | PBKS | bowler | 35.8 | 34 | fantasy_points_form_5 (+1.8), runs_career_avg (−1.7), fantasy_points_career_avg (−0.8) |
+| Josh Inglis | PBKS | wicketkeeper | 35.7 | 52 | fantasy_points_career_avg (+1.2), fantasy_points_form_5 (+0.9), strike_rate_form_5 (−0.9) |
+| Chahal | PBKS | bowler | 34.8 | 25 | runs_career_avg (−2.3), fantasy_points_career_avg (+0.9), fantasy_points_form_5 (+0.8) |
+| **Total** | | | **438.2** | **373** | Dream Team for this match: 629 |
 
-This match shows the main weakness. The model spreads its predictions across a narrow band (35–45 points), so it can't anticipate the big individual performances that make up most of the Dream Team's points.
+This match shows the main weakness. The model spreads its predictions across a narrow band (35–45 points), so it can't anticipate the big individual performances that make up most of the Dream Team's points. Krunal Pandya top-scored with 62 on a prediction of 36.4, and Stoinis returned 8 on a nearly identical 36.4.
 
 ---
 
@@ -269,15 +275,16 @@ This match shows the main weakness. The model spreads its predictions across a n
 
 | Interface | Brief requirement | Current status |
 |---|---|---|
-| **Product UI** (Gradio, `src/frontend/main.py`) | Enter two teams and a date, get the recommended XI with a justification for each player, in under 10 s | Gradio page exists, but `inference.py` is still a placeholder. The pieces needed (model, ILP, SHAP) are all done. The model scores in milliseconds and the ILP solves in 0.05–0.08 s, so the 10-second limit is easily met. |
-| **Model UI** | Choose train/test periods, retrain, save models to `src/model_artifacts/`, save processed data to `src/data/processed/`, and export a CSV with Match Date, Team 1, Team 2, Predicted XI, Dream Team XI, Predicted Points, Actual Points, MAE | **Not built yet.** The evaluation in Section 6 produces exactly these columns per match and is the logic this UI needs. |
+| **Product UI** (Gradio, `src/frontend/main.py`) | Enter two teams and a date, get the recommended XI with a justification for each player, in under 10 s | Gradio page exists, but `inference.py` is still a placeholder. The pieces needed (model, ILP, SHAP) are all done. The model scores in milliseconds and the ILP solves in 0.07–0.09 s, so the 10-second limit is easily met. |
+| **Model UI** | Choose train/test periods, retrain, save models to `src/model_artifacts/`, save processed data to `src/data/processed/`, and export a CSV with Match Date, Team 1, Team 2, Predicted XI, Dream Team XI, Predicted Points, Actual Points, MAE | **Not built yet**, but the logic behind it is: `src/scripts/evaluation.py --test-season` already takes the test period and writes exactly those columns to `src/model_artifacts/evaluation_<season>.csv`. The UI has to wrap it and save the fitted model. |
 
 ---
 
 ## 10. Limitations and next steps
 
-The following are ordered by expected impact on the 70 % "model quality" criterion:
+The following are ordered by expected impact on the 70 % "model quality" criterion. The headline problem is now sharper than in the previous run: **XGBoost does not yet beat a career average at choosing an XI**, so items 1 and 2 are the ones that matter.
 
+0. **Optimise for within-match ranking, not absolute error.** The optimiser only cares about the order of players inside one match, but the model is trained on squared error across the whole season, where most of the variance is between players rather than within a match. Worth trying: a ranking objective (`rank:pairwise`) with the match as the group, or predicting points relative to the match average.
 1. **Model the target's distribution, not just its mean.** Points are zero-inflated and right-skewed. Promising options:
    - a Tweedie or Poisson objective
    - predicting batting, bowling and fielding points separately and adding them
@@ -300,9 +307,9 @@ The following are ordered by expected impact on the 70 % "model quality" criteri
 | Deterministic training (fixed seed, fixed season split) | Done |
 | Training restricted to IPL 2022–2025 and no 2026 data | Done |
 | External data fetched programmatically (`src/scripts/external_data_integration.ipynb`) | Done |
-| Model training script (`src/scripts/train_xgboost_model.py`) | Needs updating: it lists features that aren't in the data yet (`humidity`, `wind_speed`, `avg_fours`, `avg_sixes`, `pitch_type`) |
-| Evaluation script that reproduces Section 7 | To be added to the repo |
-| `requirements.txt` | To be added. Dependencies are currently in `pyproject.toml` and `uv.lock`, and `xgboost`, `scikit-learn` and `shap` are missing from them. |
+| Model training script (`src/scripts/train_xgboost_model.py`) | **Currently broken.** Its `DATA_PATH` points at `src/data/aggregate_player_match_features_with_external_data.csv`, whose columns don't match, and it lists features that aren't in the data (`humidity`, `wind_speed`, `pitch_type`). `evaluation.py` fits the same model correctly and is the reference for the feature list. |
+| Evaluation script that reproduces Section 7 | Done: `src/scripts/evaluation.py` |
+| `requirements.txt` | To be added. Dependencies are currently in `pyproject.toml` and `uv.lock`, which now cover `xgboost` and `shap`. `scikit-learn` is still missing, and `train_xgboost_model.py` imports it; `evaluation.py` deliberately does not. |
 | `src/model_artifacts/`, `src/data/processed/` | To be created by the Model UI |
 | Product UI and Model UI | See Section 9 |
 | Video demo | To do |

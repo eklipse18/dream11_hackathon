@@ -10,21 +10,44 @@ DATA_PATH = "src/data/aggregate_player_match_features_with_external_data.csv"
 OUTPUT_DIR = Path("src/models/")
 
 NUMERIC_FEATURES = [
-    "runs_form_5", "wickets_form_5", "fantasy_points_form_5",
+    "avg_score",
+    "avg_balls_faced",
+    "avg_outs",
+    "avg_runs_conceded",
+    "avg_balls_bowled",
+    "avg_wickets_taken",
+    "avg_fantasy_points",
+    "avg_venue_fantasy_points",
+    "avg_against_opposition_fantasy_points",
+    "avg_score_5",
+    "avg_balls_faced_5",
+    "avg_outs_5",
+    "avg_runs_conceded_5",
+    "avg_balls_bowled_5",
+    "avg_wickets_taken_5",
+    "avg_fantasy_points_5",
     "matches_played",
-    "runs_career_avg", "wickets_career_avg", "fantasy_points_career_avg",
-    "fantasy_points_venue_avg", "fantasy_points_vs_opponent_avg",
-    "temp_max", "temp_min", "precipitation", "humidity", "wind_speed", "avg_fours", "avg_sixes", "avg_balls_faced", "avg_outs", "avg_runs_conceded", "avg_balls_bowled", "avg_catches", "avg_runouts"
+    "avg_fours",
+    "avg_sixes",
+    "avg_catches",
+    "avg_runouts",
+    "temp_max",
+    "temp_min",
+    "precipitation",
 ]
-CATEGORICAL_FEATURES = ["venue", "team", "opponent", "role_group", "weather_code", "pitch_type"]
+CATEGORICAL_FEATURES = [
+    "venue",
+    "batting_team",
+    "bowling_team",
+    "role",
+    "weather_code",
+]
 TARGET = "fantasy_points"
 
-VAL_FRAC = 0.15     
-TEST_FRAC = 0.20    # most recent matches
-
+VAL_FRAC = 0.15
+TEST_FRAC = 0.20  # most recent matches
 
 # Role
-
 def normalize_role(raw_role) -> str:
 
     if pd.isna(raw_role):
@@ -33,13 +56,26 @@ def normalize_role(raw_role) -> str:
 
     is_bowl_ar = "bowling" in r and ("all" in r or "rounder" in r)
     is_bat_ar = "batting" in r and ("all" in r or "rounder" in r)
-    is_ar = ("all-round" in r or "allrounder" in r or "all round" in r
-             or is_bowl_ar or is_bat_ar)
+    is_ar = (
+        "all-round" in r
+        or "allrounder" in r
+        or "all round" in r
+        or is_bowl_ar
+        or is_bat_ar
+    )
     is_wk = "keeper" in r
     is_bowler = "bowl" in r and not is_ar
-    is_bat = any(k in r for k in
-                 ["bat", "top-order", "top order", "middle-order",
-                  "middle order", "opening"])
+    is_bat = any(
+        k in r
+        for k in [
+            "bat",
+            "top-order",
+            "top order",
+            "middle-order",
+            "middle order",
+            "opening",
+        ]
+    )
 
     if is_ar:
         return "AR"
@@ -53,11 +89,10 @@ def normalize_role(raw_role) -> str:
 
 
 # Data
-
 def load_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     df["date"] = pd.to_datetime(df["date"])
-    df["role_group"] = df["player_role"].apply(normalize_role)
+    df["role_group"] = df["role"].apply(normalize_role)
 
     n_before = len(df)
     df = df.dropna(subset=[TARGET]).reset_index(drop=True)
@@ -84,31 +119,39 @@ def time_based_split(df: pd.DataFrame, X: pd.DataFrame, y: pd.Series):
     n_test = int(n * TEST_FRAC)
     n_val = int(n * VAL_FRAC)
 
-    test_idx = order[n - n_test:]
-    val_idx = order[n - n_test - n_val: n - n_test]
+    test_idx = order[n - n_test :]
+    val_idx = order[n - n_test - n_val : n - n_test]
     train_idx = order[: n - n_test - n_val]
 
-    print(f"Train: {len(train_idx)} rows, up to {df.loc[train_idx, 'date'].max().date()}")
+    print(
+        f"Train: {len(train_idx)} rows, up to {df.loc[train_idx, 'date'].max().date()}"
+    )
     print(f"Val:   {len(val_idx)} rows, up to {df.loc[val_idx, 'date'].max().date()}")
-    print(f"Test:  {len(test_idx)} rows, from {df.loc[test_idx, 'date'].min().date()} onward")
-
-    return (
-        X.loc[train_idx], X.loc[val_idx], X.loc[test_idx],
-        y.loc[train_idx], y.loc[val_idx], y.loc[test_idx],
+    print(
+        f"Test:  {len(test_idx)} rows, from {df.loc[test_idx, 'date'].min().date()} onward"
     )
 
+    return (
+        X.loc[train_idx],
+        X.loc[val_idx],
+        X.loc[test_idx],
+        y.loc[train_idx],
+        y.loc[val_idx],
+        y.loc[test_idx],
+    )
 
 
 # Model
 
+
 def train_model(X_train, y_train, X_val, y_val) -> xgb.XGBRegressor:
     model = xgb.XGBRegressor(
         n_estimators=1000,
-        max_depth=4,            
+        max_depth=4,
         learning_rate=0.03,
         subsample=0.8,
         colsample_bytree=0.8,
-        min_child_weight=5,     
+        min_child_weight=5,
         reg_lambda=1.0,
         enable_categorical=True,
         tree_method="hist",
@@ -117,8 +160,9 @@ def train_model(X_train, y_train, X_val, y_val) -> xgb.XGBRegressor:
         random_state=42,
     )
     model.fit(
-        X_train, y_train,
-        eval_set=[(X_val, y_val)],  
+        X_train,
+        y_train,
+        eval_set=[(X_val, y_val)],
         verbose=False,
     )
     print(f"Best iteration: {model.best_iteration} (of {model.n_estimators} max)")
