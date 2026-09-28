@@ -1,5 +1,5 @@
 import pandas as pd
-from ..models
+# from ..models
 import pulp
 
 agg_data = pd.read_csv('src/frontend/2026_player_match_agg.csv')
